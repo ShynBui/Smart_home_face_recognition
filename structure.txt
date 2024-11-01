@@ -1,0 +1,13 @@
+face_recognition_app/
+├── app/
+│   ├── main.py                         # Tệp chính khởi động FastAPI
+│   ├── face_recognition.py             # API endpoint và logic nhận diện khuôn mặt
+│   ├── yolov8_model.py                 # Khởi tạo model YOLOv8 cho nhận diện khuôn mặt
+│   ├── chroma_db.py                    # Kết nối và sử dụng Chroma DB cho so sánh khuôn mặt
+│   ├── config.py                       # Cấu hình ứng dụng và các biến môi trường
+│   └── requirements.txt                # Danh sách các thư viện cần thiết
+├── models/                             # Lưu trữ trọng số YOLOv8 và dữ liệu cho Chroma DB
+│   └── yolov8_weights.pth              # Trọng số model YOLOv8
+├── data/                               # Lưu trữ ảnh hoặc dữ liệu khuôn mặt để thử nghiệm
+│   └── sample_images/                  # Một số ảnh mẫu để test
+└── README.md                           # Hướng dẫn sử dụng ứng dụng
