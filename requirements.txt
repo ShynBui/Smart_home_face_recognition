@@ -1,0 +1,15 @@
+fastapi
+tensorflow
+uvicorn
+opencv-python-headless
+requests
+moviepy
+deepface
+opencv-python
+tf-keras
+ultralytics
+aiortc
+mediapipe
+chromadb<0.5.16
+pillow
+open-clip-torch
