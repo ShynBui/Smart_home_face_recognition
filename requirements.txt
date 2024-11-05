@@ -13,3 +13,6 @@ mediapipe
 chromadb<0.5.16
 pillow
 open-clip-torch
+transformers
+pyserial
+playsound

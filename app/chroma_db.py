@@ -15,7 +15,7 @@ from PIL import Image
 
 
 class FaceDB:
-    def __init__(self, base_dir: str = str(os.path.join(os.getcwd(), 'user')), db_path: str = "my_vectordb", threshold: float = 0.3):
+    def __init__(self, base_dir: str = str(os.path.join(os.getcwd(), 'user')), db_path: str = "my_vectordb", threshold: float = 0.2):
         """
         Khởi tạo lớp FaceDB để quản lý cơ sở dữ liệu người dùng và ảnh với Chroma DB.
         Khi khởi tạo, tự động thêm tất cả người dùng trong thư mục `user` vào DB, rồi xóa thư mục `user`.
@@ -29,7 +29,9 @@ class FaceDB:
         self.threshold = threshold
         self.chroma_client = PersistentClient(path=db_path)
         self.image_loader = ImageLoader()
-        self.embedding_function = OpenCLIPEmbeddingFunction()
+        self.embedding_function = OpenCLIPEmbeddingFunction(model_name= 'MobileCLIP-B',checkpoint="datacompdr") ## threhold = 0.2
+        # self.embedding_function = OpenCLIPEmbeddingFunction(model_name='ViT-g-14',
+        #                                                     checkpoint="laion2b_s34b_b88k")  ## threhold = 2
         self.face_detector = YOLOFaceDetector()
 
         # Tạo hoặc lấy collection trong Chroma DB
@@ -139,7 +141,7 @@ class FaceDB:
 
             face_img = Image.open(image).crop((x_min, y_min, x_max, y_max))
 
-            face_img.save(f"{user_name}_{metadata['image_id']}.jpg")
+            # face_img.save(f"{user_name}_{metadata['image_id']}.jpg")
 
             face_img_np = np.array(face_img)
 
@@ -164,26 +166,43 @@ class FaceDB:
         start_time = time.time()
         query_result = self.db.query(
             query_images=[image_np],
-            n_results=5
+            n_results=10
         )
         print('Query time:', time.time() - start_time)
 
-        print(query_result)
+        # Lấy danh sách tên duy nhất từ metadatas
+        unique_names = list(set([i['name'] for i in query_result['metadatas'][0]]))
+
+        # Tạo từ điển rỗng để chứa tên người dùng và danh sách khoảng cách
+        matching_users = {}
+
+        # Lặp qua từng khoảng cách và kiểm tra nếu thỏa ngưỡng threshold
+        for i, distance in enumerate(query_result['distances'][0]):
+            print("Distance:", distance)
+            if distance <= self.threshold:
+                user_name = query_result['metadatas'][0][i]['name']
+                # Đảm bảo rằng user_name có một danh sách trong từ điển trước khi gọi append
+                matching_users.setdefault(user_name, []).append(distance)
+
+        # print(matching_users)
+        for num, value in matching_users.items():
+            try:
+                matching_users[num] = sum(matching_users[num]) / len(matching_users[num])
+            except:
+                matching_users[num] = 9999
+
+        matching_users_sort = {k: v for k, v in sorted(matching_users.items(), key=lambda item: item[1])}
+
+        print(matching_users_sort)
 
         # Lấy danh sách người dùng và khoảng cách của họ với ảnh đầu vào
-        matching_users = [
-            query_result['metadatas'][0][i]['name']
-            for i, distance in enumerate(query_result['distances'][0])
-            if distance <= self.threshold
-        ]
 
-        print(matching_users)
         if not matching_users:
             print("Không phát hiện người dùng trong DB. Trả về 'unknown'.")
             return "unknown", None
         else:
             # Tìm người xuất hiện nhiều nhất trong danh sách
-            most_common_user = Counter(matching_users).most_common(1)[0][0]
+            most_common_user,_ = next(iter(matching_users_sort.items()))
             print("Đã phát hiện người dùng phổ biến nhất:", most_common_user)
 
             # Trả về tên và metadata của người được phát hiện nhiều nhất
